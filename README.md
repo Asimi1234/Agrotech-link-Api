@@ -95,6 +95,17 @@ curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":
    `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/agrolink?retryWrites=true&w=majority`
    Put a database name (e.g. `agrolink`) before the `?`.
 
+### Dropping a stale index after renaming a unique field
+
+Renaming a unique field in the Mongoose schema does not remove the index Atlas already
+built for the old field name. The `githubId` → `googleId` rename is an example: the old
+`githubId_1` unique index stays until you drop it, and because new documents have no
+`githubId`, the second insert fails with a duplicate key error on `githubId: null`.
+
+To fix: Atlas → **Browse Collections** → `users` → **Indexes** tab → drop **`githubId_1`**.
+Mongoose recreates the correct `googleId_1` index on the next startup. If the collection
+holds only test data, dropping the whole collection works too.
+
 ## Render deployment
 
 Create a new **Web Service** from this repo and set:
