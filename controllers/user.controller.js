@@ -2,7 +2,11 @@ const User = require('../models/user.model');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().sort({ createdAt: -1 });
+  const { page, limit } = req.parsedQuery;
+  const users = await User.find()
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
   res.status(200).json(users);
 });
 

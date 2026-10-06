@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-const UNITS = ['kg', 'ton', 'lb', 'bag', 'crate', 'litre', 'unit'];
+const UNITS = ['kg', 'bag', 'tonne', 'crate', 'litre', 'piece'];
+const STATUSES = ['available', 'sold'];
 
 const listingSchema = new mongoose.Schema({
   title: {
@@ -48,11 +49,15 @@ const listingSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  status: {
+    type: String,
+    enum: STATUSES,
+    default: 'available'
   }
-});
+}, { timestamps: true });
+
+listingSchema.index({ commodity: 1 });
+listingSchema.index({ location: 1 });
 
 listingSchema.set('toJSON', {
   virtuals: true,
@@ -65,3 +70,4 @@ listingSchema.set('toJSON', {
 
 module.exports = mongoose.model('Listing', listingSchema);
 module.exports.UNITS = UNITS;
+module.exports.STATUSES = STATUSES;

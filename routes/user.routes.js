@@ -1,6 +1,7 @@
 const express = require('express');
 const { ROLES } = require('../models/user.model');
 const validate = require('../middleware/validate');
+const validateQuery = require('../middleware/validateQuery');
 const validateObjectId = require('../middleware/validateObjectId');
 const {
   getUsers,
@@ -19,6 +20,11 @@ const userSpec = {
   role: { type: 'string', enum: ROLES }
 };
 
+const listQuerySpec = {
+  page: { type: 'integer', default: 1 },
+  limit: { type: 'integer', default: 20, max: 100 }
+};
+
 /**
  * @openapi
  * tags:
@@ -32,6 +38,22 @@ const userSpec = {
  *   get:
  *     tags: [Users]
  *     summary: Get all users
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Items per page (default 20, max 100)
  *     responses:
  *       200:
  *         description: List of users
@@ -41,6 +63,12 @@ const userSpec = {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *   post:
  *     tags: [Users]
  *     summary: Create a user
@@ -70,7 +98,7 @@ const userSpec = {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', getUsers);
+router.get('/', validateQuery(listQuerySpec), getUsers);
 router.post('/', validate(userSpec), createUser);
 
 /**

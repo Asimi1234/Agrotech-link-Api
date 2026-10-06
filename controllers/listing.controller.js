@@ -10,7 +10,8 @@ const LISTING_FIELDS = [
   'unit',
   'quantityAvailable',
   'location',
-  'supplierId'
+  'supplierId',
+  'status'
 ];
 
 const pickFields = (body) => {
@@ -24,7 +25,17 @@ const pickFields = (body) => {
 };
 
 const getListings = asyncHandler(async (req, res) => {
-  const listings = await Listing.find().sort({ createdAt: -1 });
+  const { page, limit, commodity, location, status } = req.parsedQuery;
+
+  const filter = {};
+  if (commodity !== undefined) filter.commodity = commodity;
+  if (location !== undefined) filter.location = location;
+  if (status !== undefined) filter.status = status;
+
+  const listings = await Listing.find(filter)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
   res.status(200).json(listings);
 });
 

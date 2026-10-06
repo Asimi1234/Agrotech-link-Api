@@ -1,6 +1,7 @@
 const express = require('express');
-const { UNITS } = require('../models/listing.model');
+const { UNITS, STATUSES } = require('../models/listing.model');
 const validate = require('../middleware/validate');
+const validateQuery = require('../middleware/validateQuery');
 const validateObjectId = require('../middleware/validateObjectId');
 const {
   getListings,
@@ -20,7 +21,16 @@ const listingSpec = {
   unit: { type: 'string', required: true, enum: UNITS },
   quantityAvailable: { type: 'number', required: true, min: 0 },
   location: { type: 'string', required: true },
-  supplierId: { type: 'objectId', required: true }
+  supplierId: { type: 'objectId', required: true },
+  status: { type: 'string', enum: STATUSES }
+};
+
+const listQuerySpec = {
+  page: { type: 'integer', default: 1 },
+  limit: { type: 'integer', default: 20, max: 100 },
+  commodity: { type: 'string' },
+  location: { type: 'string' },
+  status: { type: 'string', enum: STATUSES }
 };
 
 /**
@@ -36,6 +46,38 @@ const listingSpec = {
  *   get:
  *     tags: [Listings]
  *     summary: Get all listings
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Items per page (default 20, max 100)
+ *       - in: query
+ *         name: commodity
+ *         schema:
+ *           type: string
+ *         description: Exact-match filter on commodity
+ *       - in: query
+ *         name: location
+ *         schema:
+ *           type: string
+ *         description: Exact-match filter on location
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [available, sold]
+ *         description: Exact-match filter on status
  *     responses:
  *       200:
  *         description: List of listings
@@ -45,6 +87,12 @@ const listingSpec = {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Listing'
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *   post:
  *     tags: [Listings]
  *     summary: Create a listing
@@ -68,7 +116,7 @@ const listingSpec = {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', getListings);
+router.get('/', validateQuery(listQuerySpec), getListings);
 router.post('/', validate(listingSpec), createListing);
 
 /**

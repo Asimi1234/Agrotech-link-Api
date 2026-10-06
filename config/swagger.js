@@ -1,6 +1,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const { ROLES } = require('../models/user.model');
-const { UNITS } = require('../models/listing.model');
+const { UNITS, STATUSES } = require('../models/listing.model');
 
 const serverUrl =
   process.env.SWAGGER_SERVER_URL ||
@@ -36,7 +36,8 @@ const options = {
             username: { type: 'string', example: 'jane_farmer' },
             email: { type: 'string', example: 'jane@example.com' },
             role: { type: 'string', enum: ROLES, example: 'farmer' },
-            createdAt: { type: 'string', format: 'date-time', readOnly: true }
+            createdAt: { type: 'string', format: 'date-time', readOnly: true },
+            updatedAt: { type: 'string', format: 'date-time', readOnly: true }
           }
         },
         UserInput: {
@@ -65,7 +66,9 @@ const options = {
             quantityAvailable: { type: 'number', example: 120 },
             location: { type: 'string', example: 'Kaduna, Nigeria' },
             supplierId: { type: 'string', example: '652f1c2e5a1b2c3d4e5f6a7b' },
-            createdAt: { type: 'string', format: 'date-time' }
+            status: { type: 'string', enum: STATUSES, default: 'available', example: 'available' },
+            createdAt: { type: 'string', format: 'date-time', readOnly: true },
+            updatedAt: { type: 'string', format: 'date-time', readOnly: true }
           }
         },
         ListingInput: {
@@ -88,7 +91,8 @@ const options = {
             unit: { type: 'string', enum: UNITS, example: 'bag' },
             quantityAvailable: { type: 'number', minimum: 0, example: 120 },
             location: { type: 'string', example: 'Kaduna, Nigeria' },
-            supplierId: { type: 'string', example: '652f1c2e5a1b2c3d4e5f6a7b' }
+            supplierId: { type: 'string', example: '652f1c2e5a1b2c3d4e5f6a7b' },
+            status: { type: 'string', enum: STATUSES, default: 'available', example: 'available' }
           }
         },
         Error: {

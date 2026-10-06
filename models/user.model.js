@@ -29,12 +29,8 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ROLES,
     default: 'buyer'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
-});
+}, { timestamps: true });
 
 userSchema.set('toJSON', {
   virtuals: true,

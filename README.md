@@ -7,8 +7,10 @@ Authentication uses Google as the OAuth provider because most of the farmers thi
 
 ## Collections
 
-- **users**: `googleId`, `username`, `email`, `role` (`farmer | supplier | buyer | admin`), `createdAt`
-- **listings**: `title`, `description`, `commodity`, `pricePerUnit`, `unit`, `quantityAvailable`, `location`, `supplierId` (ref → users), `createdAt`
+- **users**: `googleId`, `username`, `email`, `role` (`farmer | supplier | buyer | admin`), `createdAt`, `updatedAt`
+- **listings**: `title`, `description`, `commodity`, `pricePerUnit`, `unit` (`kg | bag | tonne | crate | litre | piece`), `quantityAvailable`, `location`, `supplierId` (ref → users), `status` (`available | sold`, default `available`), `createdAt`, `updatedAt`
+
+`createdAt` and `updatedAt` are managed automatically by Mongoose and are read-only.
 
 ## Local setup
 
@@ -59,9 +61,9 @@ curl -s $BASE/users/USER_ID
 curl -s -X PUT $BASE/users/USER_ID -H 'Content-Type: application/json' \
   -d '{"role":"admin"}'
 
-# Create a listing (supplierId must be an existing user id)
+# Create a listing (supplierId must be an existing user id; status is optional, defaults to available)
 curl -s -X POST $BASE/listings -H 'Content-Type: application/json' \
-  -d '{"title":"Fresh Maize","description":"Grade A yellow maize","commodity":"Maize","pricePerUnit":180.5,"unit":"bag","quantityAvailable":120,"location":"Kaduna","supplierId":"USER_ID"}'
+  -d '{"title":"Fresh Maize","description":"Grade A yellow maize","commodity":"Maize","pricePerUnit":180.5,"unit":"bag","quantityAvailable":120,"location":"Kaduna","supplierId":"USER_ID","status":"available"}'
 
 # List / get / update / delete listings
 curl -s $BASE/listings
@@ -83,6 +85,32 @@ curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":
 curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","_id":"evil"}'     # 400 unknown field
 # Create the same user twice -> second returns 409 duplicate
 curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"652f1c2e5a1b2c3d4e5f6a7b"}'  # 400 supplierId does not reference an existing user
+curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"ton","quantityAvailable":1,"location":"l","supplierId":"USER_ID"}'       # 400 invalid unit
+curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"USER_ID","status":"gone"}'  # 400 invalid status
+```
+
+## Pagination and filtering
+
+`GET /users` and `GET /listings` accept `page` (default 1) and `limit` (default 20, max 100).
+`GET /listings` also accepts exact-match `commodity`, `location`, and `status` filters.
+Responses are a plain array sorted by `createdAt` descending.
+
+```bash
+# Pagination (users and listings)
+curl -s "$BASE/users?page=1&limit=20"
+curl -s "$BASE/listings?page=2&limit=10"
+
+# Filtering listings (exact match; status validated against its enum)
+curl -s "$BASE/listings?commodity=Maize"            # matches rows with commodity Maize
+curl -s "$BASE/listings?location=Kaduna&status=available"
+curl -s "$BASE/listings?commodity=DoesNotExist"     # 200 with []
+
+# Query validation errors (all 400)
+curl -s "$BASE/listings?limit=0"             # 400 limit must be at least 1
+curl -s "$BASE/listings?limit=1000"          # 400 limit must not exceed 100
+curl -s "$BASE/listings?page=abc"            # 400 page must be a positive integer
+curl -s "$BASE/listings?status=gone"         # 400 status must be one of: available, sold
+curl -s "$BASE/listings?commodity[\$ne]=x"   # 400 commodity must be a single string value (NoSQL injection blocked)
 ```
 
 ## MongoDB Atlas setup
