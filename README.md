@@ -3,9 +3,11 @@
 Node.js/Express + MongoDB (Mongoose) marketplace API for agricultural suppliers and buyers.
 CSE 341 final project. Interactive docs are served at `/api-docs`.
 
+Authentication uses Google as the OAuth provider because most of the farmers this API serves already have Google accounts; OAuth itself is added in Week 6.
+
 ## Collections
 
-- **users**: `githubId`, `username`, `email`, `role` (`farmer | supplier | buyer | admin`), `createdAt`
+- **users**: `googleId`, `username`, `email`, `role` (`farmer | supplier | buyer | admin`), `createdAt`
 - **listings**: `title`, `description`, `commodity`, `pricePerUnit`, `unit`, `quantityAvailable`, `location`, `supplierId` (ref → users), `createdAt`
 
 ## Local setup
@@ -45,7 +47,7 @@ BASE=http://localhost:3000
 
 # Create a user (note the returned id)
 curl -s -X POST $BASE/users -H 'Content-Type: application/json' \
-  -d '{"githubId":"1456789","username":"jane_farmer","email":"jane@example.com","role":"supplier"}'
+  -d '{"googleId":"113087632548723904521","username":"jane_farmer","email":"jane@example.com","role":"supplier"}'
 
 # List users
 curl -s $BASE/users
@@ -77,8 +79,8 @@ curl -s -X DELETE $BASE/users/USER_ID
 curl -s $BASE/users/123                      # 400 Invalid id
 curl -s $BASE/users/652f1c2e5a1b2c3d4e5f6a7b # 404 User not found (valid-looking but absent)
 curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"username":"x"}'        # 400 missing fields
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"githubId":"1","username":"x","email":"a@b.com","role":"hacker"}'  # 400 bad enum
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"githubId":"1","username":"x","email":"a@b.com","_id":"evil"}'     # 400 unknown field
+curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","role":"hacker"}'  # 400 bad enum
+curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","_id":"evil"}'     # 400 unknown field
 # Create the same user twice -> second returns 409 duplicate
 curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"652f1c2e5a1b2c3d4e5f6a7b"}'  # 400 supplierId does not reference an existing user
 ```

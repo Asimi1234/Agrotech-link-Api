@@ -22,19 +22,32 @@ const options = {
         User: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: '652f1c2e5a1b2c3d4e5f6a7b' },
-            githubId: { type: 'string', example: '1456789' },
+            id: {
+              type: 'string',
+              readOnly: true,
+              description: 'Database-generated identifier',
+              example: '652f1c2e5a1b2c3d4e5f6a7b'
+            },
+            googleId: {
+              type: 'string',
+              description: 'Google account ID',
+              example: '113087632548723904521'
+            },
             username: { type: 'string', example: 'jane_farmer' },
             email: { type: 'string', example: 'jane@example.com' },
             role: { type: 'string', enum: ROLES, example: 'farmer' },
-            createdAt: { type: 'string', format: 'date-time' }
+            createdAt: { type: 'string', format: 'date-time', readOnly: true }
           }
         },
         UserInput: {
           type: 'object',
-          required: ['githubId', 'username', 'email'],
+          required: ['googleId', 'username', 'email'],
           properties: {
-            githubId: { type: 'string', example: '1456789' },
+            googleId: {
+              type: 'string',
+              description: 'Google account ID',
+              example: '113087632548723904521'
+            },
             username: { type: 'string', example: 'jane_farmer' },
             email: { type: 'string', example: 'jane@example.com' },
             role: { type: 'string', enum: ROLES, example: 'farmer' }

@@ -13,7 +13,7 @@ const {
 const router = express.Router();
 
 const userSpec = {
-  githubId: { type: 'string', required: true },
+  googleId: { type: 'string', required: true },
   username: { type: 'string', required: true },
   email: { type: 'string', required: true },
   role: { type: 'string', enum: ROLES }
@@ -64,7 +64,7 @@ const userSpec = {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       409:
- *         description: Duplicate githubId or email
+ *         description: Duplicate googleId or email
  *         content:
  *           application/json:
  *             schema:
@@ -139,7 +139,7 @@ router.post('/', validate(userSpec), createUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       409:
- *         description: Duplicate githubId or email
+ *         description: Duplicate googleId or email
  *         content:
  *           application/json:
  *             schema:

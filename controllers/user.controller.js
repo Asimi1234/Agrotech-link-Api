@@ -15,14 +15,14 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 const createUser = asyncHandler(async (req, res) => {
-  const { githubId, username, email, role } = req.body;
-  const user = await User.create({ githubId, username, email, role });
+  const { googleId, username, email, role } = req.body;
+  const user = await User.create({ googleId, username, email, role });
   res.status(201).json(user);
 });
 
 const updateUser = asyncHandler(async (req, res) => {
-  const { githubId, username, email, role } = req.body;
-  const update = { githubId, username, email, role };
+  const { googleId, username, email, role } = req.body;
+  const update = { googleId, username, email, role };
   Object.keys(update).forEach((key) => update[key] === undefined && delete update[key]);
 
   const user = await User.findByIdAndUpdate(req.params.id, update, {

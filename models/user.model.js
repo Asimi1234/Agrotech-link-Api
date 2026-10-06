@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const ROLES = ['farmer', 'supplier', 'buyer', 'admin'];
 
 const userSchema = new mongoose.Schema({
-  githubId: {
+  googleId: {
     type: String,
     required: true,
     unique: true,
