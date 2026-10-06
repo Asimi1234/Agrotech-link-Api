@@ -1,0 +1,27 @@
+{
+  "name": "agrotech-linkapi",
+  "version": "1.0.0",
+  "description": "AgroLink API - CSE 341 final project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "express-mongo-sanitize": "^2.2.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^8.24.5",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
