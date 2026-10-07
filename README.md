@@ -150,3 +150,22 @@ Create a new **Web Service** from this repo and set:
 After deploy, open `https://<your-service>.onrender.com/api-docs`. The Swagger "Try it out"
 button targets `SWAGGER_SERVER_URL` (or Render's `RENDER_EXTERNAL_URL` if that var is unset),
 so it works against the live server rather than localhost.
+
+## Known limitations
+
+These are known and intentional for Week 5; authentication and access control land in Week 6.
+
+- **Unauthenticated writes.** Every route is public, including POST, PUT, and DELETE. Anyone
+  can create, modify, or delete any user or listing. Google OAuth plus `requireAuth` /
+  `requireRole` / owner-check middleware are added in Week 6; the code is structured so this
+  middleware plugs in ahead of the controllers without a rewrite.
+- **`role` is client-writable.** `POST`/`PUT /users` accept `role` in the body, so a client can
+  set itself to `admin`. This is left open so an admin can be seeded for manual testing. In
+  Week 6, `role` is removed from the user write whitelist (and set only by admin logic), after
+  which a `role` in the request body is rejected as an unknown field.
+- **`googleId` is unverifiable.** The manual `POST /users` route accepts any `googleId` string.
+  Validation can only check its shape, not that it belongs to a real Google account. Once OAuth
+  is in place, `googleId` is taken from the Google-verified sign-in profile (`profile.id`) and
+  removed from the request whitelist, so the client can no longer supply or forge it.
+- **No rate limiting or per-document ownership checks** on listings yet. Both depend on auth and
+  are part of the Week 6 access-control work.
