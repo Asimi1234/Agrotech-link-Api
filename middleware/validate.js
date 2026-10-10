@@ -8,6 +8,11 @@ const checkType = (value, type) => {
       return typeof value === 'number' && Number.isFinite(value);
     case 'objectId':
       return typeof value === 'string' && mongoose.Types.ObjectId.isValid(value);
+    case 'objectIdArray':
+      return (
+        Array.isArray(value) &&
+        value.every((item) => typeof item === 'string' && mongoose.Types.ObjectId.isValid(item))
+      );
     default:
       return false;
   }

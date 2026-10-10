@@ -1,4 +1,5 @@
 const Listing = require('../models/listing.model');
+const Cooperative = require('../models/cooperative.model');
 
 const requireAuth = (req, res, next) => {
   if (!req.isAuthenticated()) {
@@ -46,4 +47,29 @@ const requireListingOwner = async (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth, requireRole, requireSelfOrAdmin, requireListingOwner };
+const requireCooperativeLead = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  try {
+    const cooperative = await Cooperative.findById(req.params.id);
+    if (!cooperative) {
+      return res.status(404).json({ message: 'Cooperative not found' });
+    }
+    if (req.user.role !== 'admin' && cooperative.leadId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+    req.cooperative = cooperative;
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  requireAuth,
+  requireRole,
+  requireSelfOrAdmin,
+  requireListingOwner,
+  requireCooperativeLead
+};

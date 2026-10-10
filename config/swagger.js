@@ -1,6 +1,7 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const { ROLES } = require('../models/user.model');
 const { UNITS, STATUSES } = require('../models/listing.model');
+const { SEVERITIES } = require('../models/advisory.model');
 
 const serverUrl =
   process.env.SWAGGER_SERVER_URL ||
@@ -108,6 +109,77 @@ const options = {
             quantityAvailable: { type: 'number', minimum: 0, example: 120 },
             location: { type: 'string', example: 'Kaduna, Nigeria' },
             status: { type: 'string', enum: STATUSES, default: 'available', example: 'available' }
+          }
+        },
+        Cooperative: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', readOnly: true, example: '652f1c2e5a1b2c3d4e5f6a7d' },
+            name: { type: 'string', example: 'Benue Grain Growers' },
+            description: { type: 'string', example: 'Cooperative of maize and rice farmers.' },
+            location: { type: 'string', example: 'Makurdi, Benue' },
+            primaryCommodity: { type: 'string', example: 'Maize' },
+            leadId: {
+              type: 'string',
+              readOnly: true,
+              description: 'Set from the signed-in user; not writable',
+              example: '652f1c2e5a1b2c3d4e5f6a7b'
+            },
+            memberIds: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['652f1c2e5a1b2c3d4e5f6a7b']
+            },
+            createdAt: { type: 'string', format: 'date-time', readOnly: true },
+            updatedAt: { type: 'string', format: 'date-time', readOnly: true }
+          }
+        },
+        CooperativeInput: {
+          type: 'object',
+          required: ['name', 'location'],
+          description: 'leadId is taken from the session and is not writable. The creator is added to memberIds.',
+          properties: {
+            name: { type: 'string', example: 'Benue Grain Growers' },
+            description: { type: 'string', example: 'Cooperative of maize and rice farmers.' },
+            location: { type: 'string', example: 'Makurdi, Benue' },
+            primaryCommodity: { type: 'string', example: 'Maize' },
+            memberIds: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'User ids; each must reference an existing user, no duplicates',
+              example: ['652f1c2e5a1b2c3d4e5f6a7b']
+            }
+          }
+        },
+        Advisory: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', readOnly: true, example: '652f1c2e5a1b2c3d4e5f6a7e' },
+            title: { type: 'string', example: 'Fall armyworm outbreak' },
+            content: { type: 'string', example: 'Scout maize fields and apply recommended control.' },
+            crop: { type: 'string', example: 'Maize' },
+            region: { type: 'string', example: 'Benue' },
+            severity: { type: 'string', enum: SEVERITIES, default: 'info', example: 'warning' },
+            authorId: {
+              type: 'string',
+              readOnly: true,
+              description: 'Set from the signed-in user; not writable',
+              example: '652f1c2e5a1b2c3d4e5f6a7b'
+            },
+            createdAt: { type: 'string', format: 'date-time', readOnly: true },
+            updatedAt: { type: 'string', format: 'date-time', readOnly: true }
+          }
+        },
+        AdvisoryInput: {
+          type: 'object',
+          required: ['title', 'content', 'crop', 'region'],
+          description: 'authorId is taken from the session and is not writable.',
+          properties: {
+            title: { type: 'string', example: 'Fall armyworm outbreak' },
+            content: { type: 'string', example: 'Scout maize fields and apply recommended control.' },
+            crop: { type: 'string', example: 'Maize' },
+            region: { type: 'string', example: 'Benue' },
+            severity: { type: 'string', enum: SEVERITIES, default: 'info', example: 'warning' }
           }
         },
         Error: {

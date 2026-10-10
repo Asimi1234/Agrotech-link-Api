@@ -11,6 +11,8 @@ const swaggerSpec = require('./config/swagger');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const listingRoutes = require('./routes/listing.routes');
+const cooperativeRoutes = require('./routes/cooperative.routes');
+const advisoryRoutes = require('./routes/advisory.routes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -60,6 +62,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/listings', listingRoutes);
+app.use('/cooperatives', cooperativeRoutes);
+app.use('/advisories', advisoryRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

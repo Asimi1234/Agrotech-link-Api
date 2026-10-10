@@ -9,6 +9,8 @@ Authentication uses Google as the OAuth provider because most of the farmers thi
 
 - **users**: `googleId`, `username`, `email`, `role` (`farmer | supplier | buyer | admin`), `createdAt`, `updatedAt`
 - **listings**: `title`, `description`, `commodity`, `pricePerUnit`, `unit` (`kg | bag | tonne | crate | litre | piece`), `quantityAvailable`, `location`, `supplierId` (ref → users), `status` (`available | sold`, default `available`), `createdAt`, `updatedAt`
+- **cooperatives**: `name` (unique), `description`, `location`, `primaryCommodity`, `leadId` (ref → users, set from the signed-in user), `memberIds` (array of ref → users), `createdAt`, `updatedAt`
+- **advisories**: `title`, `content`, `crop`, `region`, `severity` (`info | warning | critical`, default `info`), `authorId` (ref → users, set from the signed-in user), `createdAt`, `updatedAt`
 
 `createdAt` and `updatedAt` are managed automatically by Mongoose and are read-only.
 
@@ -64,6 +66,12 @@ Roles cannot be self-assigned to `admin`. To create the first admin:
 - `GET`, `PUT`, `DELETE /users/:id` — the user themselves or an admin. On `PUT`, `googleId` and
   `email` are not writable; a user may set their own role to `farmer`, `supplier`, or `buyer`, and
   only an admin may assign `admin`.
+- `GET /cooperatives`, `GET /cooperatives/:id` — public.
+- `POST /cooperatives` — any signed-in user. The creator becomes the `leadId` and is added to
+  `memberIds`. `leadId` is not writable; `memberIds` must all reference existing users (no duplicates).
+- `PUT`, `DELETE /cooperatives/:id` — the lead (or an admin). `leadId` is not writable.
+- `GET /advisories`, `GET /advisories/:id` — public (exact-match `crop`, `region`, `severity` filters).
+- `POST`, `PUT`, `DELETE /advisories` — admin only. `authorId` is not writable.
 - `401` when not signed in, `403` when signed in without permission.
 
 ## Routes
@@ -84,6 +92,16 @@ Roles cannot be self-assigned to `admin`. To create the first admin:
 | POST   | /listings       | Create listing   |
 | PUT    | /listings/:id   | Update listing   |
 | DELETE | /listings/:id   | Delete listing   |
+| GET    | /cooperatives        | List cooperatives     |
+| GET    | /cooperatives/:id    | Get one cooperative   |
+| POST   | /cooperatives        | Create cooperative    |
+| PUT    | /cooperatives/:id    | Update cooperative    |
+| DELETE | /cooperatives/:id    | Delete cooperative    |
+| GET    | /advisories          | List advisories       |
+| GET    | /advisories/:id      | Get one advisory      |
+| POST   | /advisories          | Create advisory       |
+| PUT    | /advisories/:id      | Update advisory       |
+| DELETE | /advisories/:id      | Delete advisory       |
 
 ## Testing each route
 
@@ -137,9 +155,10 @@ curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":
 
 ## Pagination and filtering
 
-`GET /users` and `GET /listings` accept `page` (default 1) and `limit` (default 20, max 100).
-`GET /listings` also accepts exact-match `commodity`, `location`, and `status` filters.
-Responses are a plain array sorted by `createdAt` descending.
+`GET /users`, `GET /listings`, `GET /cooperatives`, and `GET /advisories` accept `page`
+(default 1) and `limit` (default 20, max 100). `GET /listings` also accepts exact-match
+`commodity`, `location`, and `status` filters; `GET /advisories` accepts exact-match `crop`,
+`region`, and `severity` filters. Responses are a plain array sorted by `createdAt` descending.
 
 ```bash
 # Pagination (users and listings)
@@ -157,6 +176,34 @@ curl -s "$BASE/listings?limit=1000"          # 400 limit must not exceed 100
 curl -s "$BASE/listings?page=abc"            # 400 page must be a positive integer
 curl -s "$BASE/listings?status=gone"         # 400 status must be one of: available, sold
 curl -s "$BASE/listings?commodity[\$ne]=x"   # 400 commodity must be a single string value (NoSQL injection blocked)
+
+# Advisory filters
+curl -s "$BASE/advisories?crop=Maize&severity=warning"
+curl -s "$BASE/advisories?severity=gone"     # 400 severity must be one of: info, warning, critical
+```
+
+### Cooperatives and advisories (auth required for writes)
+
+Writes need the session cookie from signing in at `/auth/google`. Via the Swagger UI the cookie
+is sent automatically; via curl, capture and reuse the `connect.sid` cookie (`-c`/`-b`).
+
+```bash
+# Public reads
+curl -s "$BASE/cooperatives"
+curl -s "$BASE/advisories?region=Benue"
+
+# Create a cooperative (any signed-in user; leadId comes from the session)
+curl -s -b cookies.txt -X POST $BASE/cooperatives -H 'Content-Type: application/json' \
+  -d '{"name":"Benue Grain Growers","location":"Makurdi","primaryCommodity":"Maize"}'
+# Sending leadId -> 400 Unknown field(s): leadId
+# Duplicate name  -> 409 name already exists
+
+# Create an advisory (admin only; authorId comes from the session)
+curl -s -b cookies.txt -X POST $BASE/advisories -H 'Content-Type: application/json' \
+  -d '{"title":"Fall armyworm","content":"Scout maize fields","crop":"Maize","region":"Benue","severity":"warning"}'
+# As a non-admin        -> 403 Insufficient permissions
+# Invalid severity      -> 400 severity must be one of: info, warning, critical
+# Without a session     -> 401 Authentication required
 ```
 
 ## MongoDB Atlas setup
@@ -212,3 +259,6 @@ can only be escalated to `admin` by an existing admin. The following are still o
 - **No account recovery or multi-provider linking.** Sign-in is Google-only, and an email already
   tied to one account cannot be linked to a second provider (the callback returns 409 by design).
 - **The first admin is set manually in Atlas.** There is no bootstrap admin or invite flow.
+- **Cooperative membership is not consented.** A lead can add any existing user to `memberIds`
+  without that user's approval; members cannot remove themselves. Membership existence and
+  uniqueness are validated, but consent is not.
