@@ -3,6 +3,7 @@ const { UNITS, STATUSES } = require('../models/listing.model');
 const validate = require('../middleware/validate');
 const validateQuery = require('../middleware/validateQuery');
 const validateObjectId = require('../middleware/validateObjectId');
+const { requireRole, requireListingOwner } = require('../middleware/auth');
 const {
   getListings,
   getListingById,
@@ -21,7 +22,6 @@ const listingSpec = {
   unit: { type: 'string', required: true, enum: UNITS },
   quantityAvailable: { type: 'number', required: true, min: 0 },
   location: { type: 'string', required: true },
-  supplierId: { type: 'objectId', required: true },
   status: { type: 'string', enum: STATUSES }
 };
 
@@ -96,6 +96,9 @@ const listQuerySpec = {
  *   post:
  *     tags: [Listings]
  *     summary: Create a listing
+ *     description: Requires role supplier or farmer. supplierId is taken from the session and is not writable.
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -110,14 +113,26 @@ const listQuerySpec = {
  *             schema:
  *               $ref: '#/components/schemas/Listing'
  *       400:
- *         description: Validation failed or supplierId does not exist
+ *         description: Validation failed or unknown field (e.g. supplierId)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/', validateQuery(listQuerySpec), getListings);
-router.post('/', validate(listingSpec), createListing);
+router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), createListing);
 
 /**
  * @openapi
@@ -153,6 +168,9 @@ router.post('/', validate(listingSpec), createListing);
  *   put:
  *     tags: [Listings]
  *     summary: Update a listing
+ *     description: Owner only (or admin). supplierId is not writable.
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -173,7 +191,19 @@ router.post('/', validate(listingSpec), createListing);
  *             schema:
  *               $ref: '#/components/schemas/Listing'
  *       400:
- *         description: Invalid id, validation failed, or supplierId does not exist
+ *         description: Invalid id or validation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Not the owner
  *         content:
  *           application/json:
  *             schema:
@@ -187,6 +217,9 @@ router.post('/', validate(listingSpec), createListing);
  *   delete:
  *     tags: [Listings]
  *     summary: Delete a listing
+ *     description: Owner only (or admin).
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -202,6 +235,18 @@ router.post('/', validate(listingSpec), createListing);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Not the owner
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Listing not found
  *         content:
@@ -210,7 +255,13 @@ router.post('/', validate(listingSpec), createListing);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id', validateObjectId(), getListingById);
-router.put('/:id', validateObjectId(), validate(listingSpec, { partial: true }), updateListing);
-router.delete('/:id', validateObjectId(), deleteListing);
+router.put(
+  '/:id',
+  validateObjectId(),
+  requireListingOwner,
+  validate(listingSpec, { partial: true }),
+  updateListing
+);
+router.delete('/:id', validateObjectId(), requireListingOwner, deleteListing);
 
 module.exports = router;

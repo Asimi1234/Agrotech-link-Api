@@ -25,9 +25,15 @@ const createUser = asyncHandler(async (req, res) => {
 });
 
 const updateUser = asyncHandler(async (req, res) => {
-  const { googleId, username, email, role } = req.body;
-  const update = { googleId, username, email, role };
-  Object.keys(update).forEach((key) => update[key] === undefined && delete update[key]);
+  const { username, role } = req.body;
+
+  if (role === 'admin' && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only an admin may assign the admin role' });
+  }
+
+  const update = {};
+  if (username !== undefined) update.username = username;
+  if (role !== undefined) update.role = role;
 
   const user = await User.findByIdAndUpdate(req.params.id, update, {
     new: true,

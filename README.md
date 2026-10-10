@@ -21,14 +21,60 @@ Authentication uses Google as the OAuth provider because most of the farmers thi
    - `CORS_ORIGIN` — comma-separated list of allowed origins (e.g. `http://localhost:3000`)
    - `NODE_ENV` — `development` or `production`
    - `SWAGGER_SERVER_URL` — leave blank locally; set to your Render URL in production
+   - `SESSION_SECRET` — a long random string used to sign the session cookie
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from your Google OAuth client
+   - `GOOGLE_CALLBACK_URL` — e.g. `http://localhost:3000/auth/google/callback` locally,
+     and `https://<your-service>.onrender.com/auth/google/callback` on Render
 3. `npm run dev` (nodemon) or `npm start`
 4. Open `http://localhost:3000/api-docs`
 
+The app refuses to start and prints which variable is missing if any of `MONGODB_URI`,
+`SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, or `GOOGLE_CALLBACK_URL` is unset.
+
+## Authentication
+
+Sign-in is Google OAuth with server-side sessions stored in MongoDB.
+
+- `GET /auth/google` — start sign-in (scopes: profile, email).
+- `GET /auth/google/callback` — completes sign-in and returns the user as JSON.
+- `GET /auth/me` — the current user, or 401 if not signed in.
+- `POST /auth/logout` — destroys the session and clears the cookie.
+
+On first sign-in a user is created from the Google profile id, the verified email, and the
+display name, with role `buyer`. Unverified Google emails are rejected (403), and if the email
+already belongs to a different account the callback returns 409 without linking accounts. The
+session stores only the user id; the cookie is httpOnly, sameSite lax, secure in production, and
+expires after 24 hours.
+
+### Making the first admin
+
+Roles cannot be self-assigned to `admin`. To create the first admin:
+
+1. Sign in once at `/auth/google` so your user document exists.
+2. In Atlas → Browse Collections → `users`, find your document and set `role` to `admin`.
+3. Sign out and back in (or just continue; the role is read on each request). `GET /users` now works.
+
+## Access rules
+
+- `GET /listings`, `GET /listings/:id` — public.
+- `POST /listings` — signed-in users with role `supplier` or `farmer`; `supplierId` comes from the
+  session and is rejected as an unknown field if sent in the body.
+- `PUT`, `DELETE /listings/:id` — the listing's owner (or an admin). `supplierId` is not writable.
+- `GET /users`, `POST /users` — admin only. Admin may set `googleId`, `email`, and `role`.
+- `GET`, `PUT`, `DELETE /users/:id` — the user themselves or an admin. On `PUT`, `googleId` and
+  `email` are not writable; a user may set their own role to `farmer`, `supplier`, or `buyer`, and
+  only an admin may assign `admin`.
+- `401` when not signed in, `403` when signed in without permission.
+
 ## Routes
 
-| Method | Path            | Purpose          |
-| ------ | --------------- | ---------------- |
-| GET    | /users          | List users       |
+| Method | Path                   | Purpose                       |
+| ------ | ---------------------- | ----------------------------- |
+| GET    | /auth/google           | Start Google sign-in          |
+| GET    | /auth/google/callback  | Finish sign-in, return user   |
+| GET    | /auth/me               | Current user (or 401)         |
+| POST   | /auth/logout           | Log out, destroy session      |
+| GET    | /users                 | List users (admin)            |
 | GET    | /users/:id      | Get one user     |
 | POST   | /users          | Create user      |
 | PUT    | /users/:id      | Update user      |
@@ -153,19 +199,16 @@ so it works against the live server rather than localhost.
 
 ## Known limitations
 
-These are known and intentional for Week 5; authentication and access control land in Week 6.
+Google OAuth, sessions, and role/owner access control are now in place. Writes are
+authenticated, `googleId` comes from the Google-verified profile (not the client), and `role`
+can only be escalated to `admin` by an existing admin. The following are still open:
 
-- **Unauthenticated writes.** Every route is public, including POST, PUT, and DELETE. Anyone
-  can create, modify, or delete any user or listing. Google OAuth plus `requireAuth` /
-  `requireRole` / owner-check middleware are added in Week 6; the code is structured so this
-  middleware plugs in ahead of the controllers without a rewrite.
-- **`role` is client-writable.** `POST`/`PUT /users` accept `role` in the body, so a client can
-  set itself to `admin`. This is left open so an admin can be seeded for manual testing. In
-  Week 6, `role` is removed from the user write whitelist (and set only by admin logic), after
-  which a `role` in the request body is rejected as an unknown field.
-- **`googleId` is unverifiable.** The manual `POST /users` route accepts any `googleId` string.
-  Validation can only check its shape, not that it belongs to a real Google account. Once OAuth
-  is in place, `googleId` is taken from the Google-verified sign-in profile (`profile.id`) and
-  removed from the request whitelist, so the client can no longer supply or forge it.
-- **No rate limiting or per-document ownership checks** on listings yet. Both depend on auth and
-  are part of the Week 6 access-control work.
+- **No rate limiting.** Neither the login flow (`/auth/google`) nor the API has rate limiting, so
+  both are open to brute-force and abuse. A fixed-window limiter on auth and a general API limiter
+  are the recommended next step.
+- **Self role changes.** A signed-in user may change their own role between `farmer`, `supplier`,
+  and `buyer` (only `admin` is protected). This is intentional for this project but means role is
+  not a strong trust boundary below admin.
+- **No account recovery or multi-provider linking.** Sign-in is Google-only, and an email already
+  tied to one account cannot be linked to a second provider (the callback returns 409 by design).
+- **The first admin is set manually in Atlas.** There is no bootstrap admin or invite flow.

@@ -18,6 +18,14 @@ const options = {
     },
     servers: [{ url: serverUrl }],
     components: {
+      securitySchemes: {
+        cookieAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'connect.sid',
+          description: 'Session cookie set after Google sign-in'
+        }
+      },
       schemas: {
         User: {
           type: 'object',
@@ -54,6 +62,14 @@ const options = {
             role: { type: 'string', enum: ROLES, example: 'farmer' }
           }
         },
+        UserUpdateInput: {
+          type: 'object',
+          description: 'googleId and email are not writable. Only an admin may set role to admin.',
+          properties: {
+            username: { type: 'string', example: 'jane_farmer' },
+            role: { type: 'string', enum: ROLES, example: 'supplier' }
+          }
+        },
         Listing: {
           type: 'object',
           properties: {
@@ -80,9 +96,9 @@ const options = {
             'pricePerUnit',
             'unit',
             'quantityAvailable',
-            'location',
-            'supplierId'
+            'location'
           ],
+          description: 'supplierId is taken from the session and is not writable.',
           properties: {
             title: { type: 'string', example: 'Fresh Maize - 2024 Harvest' },
             description: { type: 'string', example: 'Grade A yellow maize, sun dried.' },
@@ -91,7 +107,6 @@ const options = {
             unit: { type: 'string', enum: UNITS, example: 'bag' },
             quantityAvailable: { type: 'number', minimum: 0, example: 120 },
             location: { type: 'string', example: 'Kaduna, Nigeria' },
-            supplierId: { type: 'string', example: '652f1c2e5a1b2c3d4e5f6a7b' },
             status: { type: 'string', enum: STATUSES, default: 'available', example: 'available' }
           }
         },

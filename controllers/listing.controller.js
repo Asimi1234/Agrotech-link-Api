@@ -1,5 +1,4 @@
 const Listing = require('../models/listing.model');
-const User = require('../models/user.model');
 const asyncHandler = require('../middleware/asyncHandler');
 
 const LISTING_FIELDS = [
@@ -10,7 +9,6 @@ const LISTING_FIELDS = [
   'unit',
   'quantityAvailable',
   'location',
-  'supplierId',
   'status'
 ];
 
@@ -49,11 +47,7 @@ const getListingById = asyncHandler(async (req, res) => {
 
 const createListing = asyncHandler(async (req, res) => {
   const data = pickFields(req.body);
-
-  const supplier = await User.exists({ _id: data.supplierId });
-  if (!supplier) {
-    return res.status(400).json({ message: 'supplierId does not reference an existing user' });
-  }
+  data.supplierId = req.user.id;
 
   const listing = await Listing.create(data);
   res.status(201).json(listing);
@@ -61,13 +55,6 @@ const createListing = asyncHandler(async (req, res) => {
 
 const updateListing = asyncHandler(async (req, res) => {
   const data = pickFields(req.body);
-
-  if (data.supplierId) {
-    const supplier = await User.exists({ _id: data.supplierId });
-    if (!supplier) {
-      return res.status(400).json({ message: 'supplierId does not reference an existing user' });
-    }
-  }
 
   const listing = await Listing.findByIdAndUpdate(req.params.id, data, {
     new: true,

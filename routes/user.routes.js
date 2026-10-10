@@ -3,6 +3,7 @@ const { ROLES } = require('../models/user.model');
 const validate = require('../middleware/validate');
 const validateQuery = require('../middleware/validateQuery');
 const validateObjectId = require('../middleware/validateObjectId');
+const { requireRole, requireSelfOrAdmin } = require('../middleware/auth');
 const {
   getUsers,
   getUserById,
@@ -17,6 +18,11 @@ const userSpec = {
   googleId: { type: 'string', required: true },
   username: { type: 'string', required: true },
   email: { type: 'string', required: true },
+  role: { type: 'string', enum: ROLES }
+};
+
+const userUpdateSpec = {
+  username: { type: 'string' },
   role: { type: 'string', enum: ROLES }
 };
 
@@ -38,6 +44,9 @@ const listQuerySpec = {
  *   get:
  *     tags: [Users]
  *     summary: Get all users
+ *     description: Admin only.
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -69,9 +78,24 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *   post:
  *     tags: [Users]
  *     summary: Create a user
+ *     description: Admin only. Admin may set googleId, email, and role.
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -91,6 +115,18 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       409:
  *         description: Duplicate googleId or email
  *         content:
@@ -98,8 +134,8 @@ const listQuerySpec = {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', validateQuery(listQuerySpec), getUsers);
-router.post('/', validate(userSpec), createUser);
+router.get('/', requireRole('admin'), validateQuery(listQuerySpec), getUsers);
+router.post('/', requireRole('admin'), validate(userSpec), createUser);
 
 /**
  * @openapi
@@ -107,6 +143,9 @@ router.post('/', validate(userSpec), createUser);
  *   get:
  *     tags: [Users]
  *     summary: Get a user by id
+ *     description: The user themselves or an admin.
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -126,6 +165,18 @@ router.post('/', validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
  *         content:
@@ -135,6 +186,9 @@ router.post('/', validate(userSpec), createUser);
  *   put:
  *     tags: [Users]
  *     summary: Update a user
+ *     description: The user themselves or an admin. googleId and email are not writable. Only an admin may assign the admin role.
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -146,7 +200,7 @@ router.post('/', validate(userSpec), createUser);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UserInput'
+ *             $ref: '#/components/schemas/UserUpdateInput'
  *     responses:
  *       200:
  *         description: Updated user
@@ -155,7 +209,19 @@ router.post('/', validate(userSpec), createUser);
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Invalid id or validation failed
+ *         description: Invalid id, validation failed, or unknown field (e.g. googleId, email)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions, or non-admin assigning admin role
  *         content:
  *           application/json:
  *             schema:
@@ -166,15 +232,12 @@ router.post('/', validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *       409:
- *         description: Duplicate googleId or email
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *   delete:
  *     tags: [Users]
  *     summary: Delete a user
+ *     description: The user themselves or an admin.
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -190,6 +253,18 @@ router.post('/', validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Not signed in
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: User not found
  *         content:
@@ -197,8 +272,14 @@ router.post('/', validate(userSpec), createUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', validateObjectId(), getUserById);
-router.put('/:id', validateObjectId(), validate(userSpec, { partial: true }), updateUser);
-router.delete('/:id', validateObjectId(), deleteUser);
+router.get('/:id', validateObjectId(), requireSelfOrAdmin(), getUserById);
+router.put(
+  '/:id',
+  validateObjectId(),
+  requireSelfOrAdmin(),
+  validate(userUpdateSpec, { partial: true }),
+  updateUser
+);
+router.delete('/:id', validateObjectId(), requireSelfOrAdmin(), deleteUser);
 
 module.exports = router;
