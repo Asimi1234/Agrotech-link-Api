@@ -15,13 +15,21 @@ const logout = (req, res, next) => {
       if (err) {
         return next(err);
       }
-      req.session.destroy((destroyErr) => {
-        if (destroyErr) {
-          return next(destroyErr);
-        }
-        res.clearCookie('connect.sid');
-        res.status(200).json({ message: 'Logged out' });
-      });
+      try {
+        req.session.destroy((destroyErr) => {
+          if (destroyErr) {
+            return next(destroyErr);
+          }
+          try {
+            res.clearCookie('connect.sid');
+            res.status(200).json({ message: 'Logged out' });
+          } catch (responseErr) {
+            next(responseErr);
+          }
+        });
+      } catch (sessionErr) {
+        next(sessionErr);
+      }
     });
   } catch (err) {
     next(err);
