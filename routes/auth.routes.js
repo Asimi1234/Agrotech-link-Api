@@ -30,7 +30,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
  *   get:
  *     tags: [Auth]
  *     summary: Google sign-in callback
- *     description: Completes sign-in and returns the authenticated user.
+ *     description: Completes sign-in and returns the authenticated user. On first sign-in a user is created from the Google profile with role buyer.
  *     responses:
  *       200:
  *         description: Authenticated user
@@ -38,18 +38,30 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Sign-in failed or was cancelled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication failed
  *       403:
  *         description: Google email not verified
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Google email is not verified
  *       409:
  *         description: Email already registered to another account
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Email already registered to another account
  */
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', (err, user, info) => {
@@ -85,6 +97,7 @@ router.get('/google/callback', (req, res, next) => {
  *   get:
  *     tags: [Auth]
  *     summary: Get the current user
+ *     description: Any signed-in user. Returns the current user, or 401 if not signed in.
  *     security:
  *       - cookieAuth: []
  *     responses:
@@ -100,6 +113,8 @@ router.get('/google/callback', (req, res, next) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  */
 router.get('/me', getMe);
 
@@ -109,11 +124,20 @@ router.get('/me', getMe);
  *   post:
  *     tags: [Auth]
  *     summary: Log out and destroy the session
+ *     description: Any signed-in user. Destroys the session and clears the cookie.
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *             example:
+ *               message: Logged out
  */
 router.post('/logout', logout);
 

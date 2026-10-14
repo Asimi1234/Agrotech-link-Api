@@ -46,6 +46,7 @@ const listQuerySpec = {
  *   get:
  *     tags: [Listings]
  *     summary: Get all listings
+ *     description: Public.
  *     parameters:
  *       - in: query
  *         name: page
@@ -93,6 +94,10 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid query parameters
+ *               errors:
+ *                 - 'status must be one of: available, sold'
  *   post:
  *     tags: [Listings]
  *     summary: Create a listing
@@ -118,18 +123,24 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: 'Unknown field(s): supplierId'
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  */
 router.get('/', validateQuery(listQuerySpec), getListings);
 router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), createListing);
@@ -140,6 +151,7 @@ router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), creat
  *   get:
  *     tags: [Listings]
  *     summary: Get a listing by id
+ *     description: Public.
  *     parameters:
  *       - in: path
  *         name: id
@@ -159,16 +171,20 @@ router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), creat
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       404:
  *         description: Listing not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Listing not found
  *   put:
  *     tags: [Listings]
  *     summary: Update a listing
- *     description: Owner only (or admin). supplierId is not writable.
+ *     description: The listing's owner or an admin. supplierId is not writable.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -182,7 +198,7 @@ router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), creat
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/ListingInput'
+ *             $ref: '#/components/schemas/ListingUpdateInput'
  *     responses:
  *       200:
  *         description: Updated listing
@@ -191,33 +207,43 @@ router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), creat
  *             schema:
  *               $ref: '#/components/schemas/Listing'
  *       400:
- *         description: Invalid id or validation failed
+ *         description: Invalid id, validation failed, or unknown field (e.g. supplierId)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Validation failed
+ *               errors:
+ *                 - pricePerUnit must be at least 0
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Not the owner
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Listing not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Listing not found
  *   delete:
  *     tags: [Listings]
  *     summary: Delete a listing
- *     description: Owner only (or admin).
+ *     description: The listing's owner or an admin.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -235,24 +261,32 @@ router.post('/', requireRole('supplier', 'farmer'), validate(listingSpec), creat
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Not the owner
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Listing not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Listing not found
  */
 router.get('/:id', validateObjectId(), getListingById);
 router.put(

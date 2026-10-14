@@ -43,6 +43,7 @@ const listQuerySpec = {
  *   get:
  *     tags: [Advisories]
  *     summary: Get all advisories
+ *     description: Public.
  *     parameters:
  *       - in: query
  *         name: page
@@ -90,6 +91,10 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid query parameters
+ *               errors:
+ *                 - 'severity must be one of: info, warning, critical'
  *   post:
  *     tags: [Advisories]
  *     summary: Create an advisory
@@ -115,18 +120,24 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: 'Unknown field(s): authorId'
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  */
 router.get('/', validateQuery(listQuerySpec), getAdvisories);
 router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
@@ -137,6 +148,7 @@ router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
  *   get:
  *     tags: [Advisories]
  *     summary: Get an advisory by id
+ *     description: Public.
  *     parameters:
  *       - in: path
  *         name: id
@@ -156,12 +168,16 @@ router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       404:
  *         description: Advisory not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Advisory not found
  *   put:
  *     tags: [Advisories]
  *     summary: Update an advisory
@@ -179,7 +195,7 @@ router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/AdvisoryInput'
+ *             $ref: '#/components/schemas/AdvisoryUpdateInput'
  *     responses:
  *       200:
  *         description: Updated advisory
@@ -188,29 +204,39 @@ router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
  *             schema:
  *               $ref: '#/components/schemas/Advisory'
  *       400:
- *         description: Invalid id or validation failed
+ *         description: Invalid id, validation failed, or unknown field (e.g. authorId)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Validation failed
+ *               errors:
+ *                 - 'severity must be one of: info, warning, critical'
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Advisory not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Advisory not found
  *   delete:
  *     tags: [Advisories]
  *     summary: Delete an advisory
@@ -232,24 +258,32 @@ router.post('/', requireRole('admin'), validate(advisorySpec), createAdvisory);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Advisory not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Advisory not found
  */
 router.get('/:id', validateObjectId(), getAdvisoryById);
 router.put(

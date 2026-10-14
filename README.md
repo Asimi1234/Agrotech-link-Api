@@ -3,7 +3,7 @@
 Node.js/Express + MongoDB (Mongoose) marketplace API for agricultural suppliers and buyers.
 CSE 341 final project. Interactive docs are served at `/api-docs`.
 
-Authentication uses Google as the OAuth provider because most of the farmers this API serves already have Google accounts; OAuth itself is added in Week 6.
+Authentication uses Google as the OAuth provider because most of the farmers this API serves already have Google accounts.
 
 ## Collections
 
@@ -105,52 +105,48 @@ Roles cannot be self-assigned to `admin`. To create the first admin:
 
 ## Testing each route
 
-With the server running and a valid `MONGODB_URI`, run these from a terminal. The easiest path
-is the Swagger UI at `/api-docs` ("Try it out" on each route). Equivalent curl commands:
+The easiest path is the Swagger UI at `/api-docs` ("Try it out" on each route); after you sign in
+at `/auth/google` it sends the session cookie automatically. Equivalent curl commands are below.
+Public reads work with plain curl; every write needs the `connect.sid` session cookie, captured
+with `-c cookies.txt` on sign-in and replayed with `-b cookies.txt`.
 
 ```bash
 BASE=http://localhost:3000
 
-# Create a user (note the returned id)
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' \
-  -d '{"googleId":"113087632548723904521","username":"jane_farmer","email":"jane@example.com","role":"supplier"}'
-
-# List users
-curl -s $BASE/users
-
-# Get one user (replace USER_ID)
-curl -s $BASE/users/USER_ID
-
-# Update a user
-curl -s -X PUT $BASE/users/USER_ID -H 'Content-Type: application/json' \
-  -d '{"role":"admin"}'
-
-# Create a listing (supplierId must be an existing user id; status is optional, defaults to available)
-curl -s -X POST $BASE/listings -H 'Content-Type: application/json' \
-  -d '{"title":"Fresh Maize","description":"Grade A yellow maize","commodity":"Maize","pricePerUnit":180.5,"unit":"bag","quantityAvailable":120,"location":"Kaduna","supplierId":"USER_ID","status":"available"}'
-
-# List / get / update / delete listings
+# Public reads (no auth)
 curl -s $BASE/listings
 curl -s $BASE/listings/LISTING_ID
-curl -s -X PUT $BASE/listings/LISTING_ID -H 'Content-Type: application/json' -d '{"pricePerUnit":200}'
-curl -s -X DELETE $BASE/listings/LISTING_ID
+curl -s $BASE/cooperatives
+curl -s "$BASE/advisories?region=Benue"
 
-# Delete a user
-curl -s -X DELETE $BASE/users/USER_ID
+# Users — admin only; replay an admin's session cookie
+curl -s -b cookies.txt $BASE/users
+curl -s -b cookies.txt $BASE/users/USER_ID
+curl -s -b cookies.txt -X POST $BASE/users -H 'Content-Type: application/json' \
+  -d '{"googleId":"113087632548723904521","username":"jane_farmer","email":"jane@example.com","role":"supplier"}'
+curl -s -b cookies.txt -X PUT $BASE/users/USER_ID -H 'Content-Type: application/json' -d '{"role":"admin"}'
+curl -s -b cookies.txt -X DELETE $BASE/users/USER_ID
+
+# Listings — writes need a supplier or farmer session; supplierId comes from the session (status optional, defaults to available)
+curl -s -b cookies.txt -X POST $BASE/listings -H 'Content-Type: application/json' \
+  -d '{"title":"Fresh Maize","description":"Grade A yellow maize","commodity":"Maize","pricePerUnit":180.5,"unit":"bag","quantityAvailable":120,"location":"Kaduna","status":"available"}'
+curl -s -b cookies.txt -X PUT $BASE/listings/LISTING_ID -H 'Content-Type: application/json' -d '{"pricePerUnit":200}'
+curl -s -b cookies.txt -X DELETE $BASE/listings/LISTING_ID
 ```
 
 ### Error cases to verify
 
 ```bash
-curl -s $BASE/users/123                      # 400 Invalid id
-curl -s $BASE/users/652f1c2e5a1b2c3d4e5f6a7b # 404 User not found (valid-looking but absent)
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"username":"x"}'        # 400 missing fields
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","role":"hacker"}'  # 400 bad enum
-curl -s -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","_id":"evil"}'     # 400 unknown field
+curl -s $BASE/listings/123                           # 400 Invalid id (public route)
+curl -s $BASE/listings/652f1c2e5a1b2c3d4e5f6a7b      # 404 Listing not found (valid-looking but absent)
+curl -s $BASE/users                                  # 401 Authentication required (no session)
+curl -s -b cookies.txt -X POST $BASE/users -H 'Content-Type: application/json' -d '{"username":"x"}'        # 400 missing fields
+curl -s -b cookies.txt -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","role":"hacker"}'  # 400 bad enum
+curl -s -b cookies.txt -X POST $BASE/users -H 'Content-Type: application/json' -d '{"googleId":"1","username":"x","email":"a@b.com","_id":"evil"}'     # 400 unknown field
 # Create the same user twice -> second returns 409 duplicate
-curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"652f1c2e5a1b2c3d4e5f6a7b"}'  # 400 supplierId does not reference an existing user
-curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"ton","quantityAvailable":1,"location":"l","supplierId":"USER_ID"}'       # 400 invalid unit
-curl -s -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"USER_ID","status":"gone"}'  # 400 invalid status
+curl -s -b cookies.txt -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"ton","quantityAvailable":1,"location":"l"}'   # 400 invalid unit
+curl -s -b cookies.txt -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","supplierId":"652f1c2e5a1b2c3d4e5f6a7b"}'  # 400 Unknown field(s): supplierId
+curl -s -b cookies.txt -X POST $BASE/listings -H 'Content-Type: application/json' -d '{"title":"t","description":"d","commodity":"c","pricePerUnit":1,"unit":"bag","quantityAvailable":1,"location":"l","status":"gone"}'  # 400 invalid status
 ```
 
 ## Pagination and filtering
@@ -216,17 +212,6 @@ curl -s -b cookies.txt -X POST $BASE/advisories -H 'Content-Type: application/js
    `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/agrolink?retryWrites=true&w=majority`
    Put a database name (e.g. `agrolink`) before the `?`.
 
-### Dropping a stale index after renaming a unique field
-
-Renaming a unique field in the Mongoose schema does not remove the index Atlas already
-built for the old field name. The `githubId` → `googleId` rename is an example: the old
-`githubId_1` unique index stays until you drop it, and because new documents have no
-`githubId`, the second insert fails with a duplicate key error on `githubId: null`.
-
-To fix: Atlas → **Browse Collections** → `users` → **Indexes** tab → drop **`githubId_1`**.
-Mongoose recreates the correct `googleId_1` index on the next startup. If the collection
-holds only test data, dropping the whole collection works too.
-
 ## Render deployment
 
 Create a new **Web Service** from this repo and set:
@@ -238,7 +223,13 @@ Create a new **Web Service** from this repo and set:
   - `CORS_ORIGIN` = the origins you allow (your Render URL, and any frontend origin)
   - `NODE_ENV` = `production`
   - `SWAGGER_SERVER_URL` = your Render URL, e.g. `https://agrolink-api.onrender.com`
+  - `SESSION_SECRET` = a long random string used to sign the session cookie
+  - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` = from your Google OAuth client
+  - `GOOGLE_CALLBACK_URL` = `https://<your-service>.onrender.com/auth/google/callback`
   - `PORT` is provided by Render automatically; the app reads `process.env.PORT`.
+
+  The app exits on startup if any of `MONGODB_URI`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`, or `GOOGLE_CALLBACK_URL` is unset.
 
 After deploy, open `https://<your-service>.onrender.com/api-docs`. The Swagger "Try it out"
 button targets `SWAGGER_SERVER_URL` (or Render's `RENDER_EXTERNAL_URL` if that var is unset),
@@ -246,19 +237,14 @@ so it works against the live server rather than localhost.
 
 ## Known limitations
 
-Google OAuth, sessions, and role/owner access control are now in place. Writes are
-authenticated, `googleId` comes from the Google-verified profile (not the client), and `role`
-can only be escalated to `admin` by an existing admin. The following are still open:
+Google OAuth, sessions, and role/owner access control are in place. Writes are authenticated,
+`googleId` comes from the Google-verified profile (not the client), and `role` can only be
+escalated to `admin` by an existing admin. The following are still open:
 
 - **No rate limiting.** Neither the login flow (`/auth/google`) nor the API has rate limiting, so
   both are open to brute-force and abuse. A fixed-window limiter on auth and a general API limiter
   are the recommended next step.
-- **Self role changes.** A signed-in user may change their own role between `farmer`, `supplier`,
-  and `buyer` (only `admin` is protected). This is intentional for this project but means role is
-  not a strong trust boundary below admin.
-- **No account recovery or multi-provider linking.** Sign-in is Google-only, and an email already
-  tied to one account cannot be linked to a second provider (the callback returns 409 by design).
-- **The first admin is set manually in Atlas.** There is no bootstrap admin or invite flow.
-- **Cooperative membership is not consented.** A lead can add any existing user to `memberIds`
-  without that user's approval; members cannot remove themselves. Membership existence and
-  uniqueness are validated, but consent is not.
+- **Admins can modify any cooperative.** `PUT`/`DELETE /cooperatives/:id` allow the lead or any
+  admin, so an admin can edit or delete a cooperative they do not lead.
+- **The Google app is in Testing mode.** Only the test users listed on the Google OAuth consent
+  screen can sign in; others are rejected by Google before reaching the callback.

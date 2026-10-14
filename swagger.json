@@ -122,6 +122,7 @@
         "properties": {
           "id": {
             "type": "string",
+            "readOnly": true,
             "example": "652f1c2e5a1b2c3d4e5f6a7c"
           },
           "title": {
@@ -162,6 +163,8 @@
           },
           "supplierId": {
             "type": "string",
+            "readOnly": true,
+            "description": "Set from the signed-in user; not writable",
             "example": "652f1c2e5a1b2c3d4e5f6a7b"
           },
           "status": {
@@ -247,6 +250,59 @@
           }
         }
       },
+      "ListingUpdateInput": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Partial update; at least one field is required. supplierId is not writable.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Fresh Maize - 2024 Harvest"
+          },
+          "description": {
+            "type": "string",
+            "example": "Grade A yellow maize, sun dried."
+          },
+          "commodity": {
+            "type": "string",
+            "example": "Maize"
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 0,
+            "example": 180.5
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "kg",
+              "bag",
+              "tonne",
+              "crate",
+              "litre",
+              "piece"
+            ],
+            "example": "bag"
+          },
+          "quantityAvailable": {
+            "type": "number",
+            "minimum": 0,
+            "example": 120
+          },
+          "location": {
+            "type": "string",
+            "example": "Kaduna, Nigeria"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "sold"
+            ],
+            "example": "sold"
+          }
+        }
+      },
       "Cooperative": {
         "type": "object",
         "properties": {
@@ -305,6 +361,39 @@
           "location"
         ],
         "description": "leadId is taken from the session and is not writable. The creator is added to memberIds.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Benue Grain Growers"
+          },
+          "description": {
+            "type": "string",
+            "example": "Cooperative of maize and rice farmers."
+          },
+          "location": {
+            "type": "string",
+            "example": "Makurdi, Benue"
+          },
+          "primaryCommodity": {
+            "type": "string",
+            "example": "Maize"
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "User ids; each must reference an existing user, no duplicates",
+            "example": [
+              "652f1c2e5a1b2c3d4e5f6a7b"
+            ]
+          }
+        }
+      },
+      "CooperativeUpdateInput": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Partial update; at least one field is required. leadId is not writable.",
         "properties": {
           "name": {
             "type": "string",
@@ -424,6 +513,38 @@
           }
         }
       },
+      "AdvisoryUpdateInput": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Partial update; at least one field is required. authorId is not writable.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Fall armyworm outbreak"
+          },
+          "content": {
+            "type": "string",
+            "example": "Scout maize fields and apply recommended control."
+          },
+          "crop": {
+            "type": "string",
+            "example": "Maize"
+          },
+          "region": {
+            "type": "string",
+            "example": "Benue"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "example": "warning"
+          }
+        }
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -436,8 +557,9 @@
             "items": {
               "type": "string"
             },
+            "description": "Present only on validation failures",
             "example": [
-              "email is required"
+              "field is required"
             ]
           }
         }
@@ -500,6 +622,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid query parameters",
+                  "errors": [
+                    "limit must not exceed 100"
+                  ]
                 }
               }
             }
@@ -510,6 +638,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -520,6 +651,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -559,11 +693,17 @@
             }
           },
           "400": {
-            "description": "Validation failed",
+            "description": "Validation failed or unknown field",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Validation failed",
+                  "errors": [
+                    "email is required"
+                  ]
                 }
               }
             }
@@ -574,6 +714,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -584,6 +727,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -594,6 +740,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "email already exists"
                 }
               }
             }
@@ -640,6 +789,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -650,6 +802,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -660,6 +815,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -670,6 +828,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "User not found"
                 }
               }
             }
@@ -724,6 +885,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Unknown field(s): email"
                 }
               }
             }
@@ -734,6 +898,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -744,6 +911,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Only an admin may assign the admin role"
                 }
               }
             }
@@ -754,6 +924,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "User not found"
                 }
               }
             }
@@ -791,6 +964,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -801,6 +977,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -811,6 +990,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -821,6 +1003,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "User not found"
                 }
               }
             }
@@ -834,6 +1019,7 @@
           "Listings"
         ],
         "summary": "Get all listings",
+        "description": "Public.",
         "parameters": [
           {
             "in": "query",
@@ -905,6 +1091,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid query parameters",
+                  "errors": [
+                    "status must be one of: available, sold"
+                  ]
                 }
               }
             }
@@ -949,6 +1141,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Unknown field(s): supplierId"
                 }
               }
             }
@@ -959,6 +1154,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -969,6 +1167,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -982,6 +1183,7 @@
           "Listings"
         ],
         "summary": "Get a listing by id",
+        "description": "Public.",
         "parameters": [
           {
             "in": "path",
@@ -1009,6 +1211,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1019,6 +1224,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Listing not found"
                 }
               }
             }
@@ -1030,7 +1238,7 @@
           "Listings"
         ],
         "summary": "Update a listing",
-        "description": "Owner only (or admin). supplierId is not writable.",
+        "description": "The listing's owner or an admin. supplierId is not writable.",
         "security": [
           {
             "cookieAuth": []
@@ -1051,7 +1259,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ListingInput"
+                "$ref": "#/components/schemas/ListingUpdateInput"
               }
             }
           }
@@ -1068,11 +1276,17 @@
             }
           },
           "400": {
-            "description": "Invalid id or validation failed",
+            "description": "Invalid id, validation failed, or unknown field (e.g. supplierId)",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Validation failed",
+                  "errors": [
+                    "pricePerUnit must be at least 0"
+                  ]
                 }
               }
             }
@@ -1083,6 +1297,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1093,6 +1310,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1103,6 +1323,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Listing not found"
                 }
               }
             }
@@ -1114,7 +1337,7 @@
           "Listings"
         ],
         "summary": "Delete a listing",
-        "description": "Owner only (or admin).",
+        "description": "The listing's owner or an admin.",
         "security": [
           {
             "cookieAuth": []
@@ -1140,6 +1363,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1150,6 +1376,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1160,6 +1389,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1170,6 +1402,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Listing not found"
                 }
               }
             }
@@ -1183,6 +1418,7 @@
           "Cooperatives"
         ],
         "summary": "Get all cooperatives",
+        "description": "Public.",
         "parameters": [
           {
             "in": "query",
@@ -1226,6 +1462,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid query parameters",
+                  "errors": [
+                    "page must be a positive integer"
+                  ]
                 }
               }
             }
@@ -1270,6 +1512,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Unknown field(s): leadId"
                 }
               }
             }
@@ -1280,6 +1525,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1290,6 +1538,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "name already exists"
                 }
               }
             }
@@ -1303,6 +1554,7 @@
           "Cooperatives"
         ],
         "summary": "Get a cooperative by id",
+        "description": "Public.",
         "parameters": [
           {
             "in": "path",
@@ -1330,6 +1582,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1340,6 +1595,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Cooperative not found"
                 }
               }
             }
@@ -1372,7 +1630,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CooperativeInput"
+                "$ref": "#/components/schemas/CooperativeUpdateInput"
               }
             }
           }
@@ -1389,11 +1647,14 @@
             }
           },
           "400": {
-            "description": "Invalid id, validation failed, or memberIds reference missing users",
+            "description": "Invalid id, validation failed, unknown field (e.g. leadId), or memberIds reference missing users",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "memberIds must all reference existing users"
                 }
               }
             }
@@ -1404,6 +1665,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1414,6 +1678,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1424,6 +1691,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Cooperative not found"
                 }
               }
             }
@@ -1434,6 +1704,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "name already exists"
                 }
               }
             }
@@ -1471,6 +1744,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1481,6 +1757,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1491,6 +1770,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1501,6 +1783,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Cooperative not found"
                 }
               }
             }
@@ -1528,7 +1813,7 @@
           "Auth"
         ],
         "summary": "Google sign-in callback",
-        "description": "Completes sign-in and returns the authenticated user.",
+        "description": "Completes sign-in and returns the authenticated user. On first sign-in a user is created from the Google profile with role buyer.",
         "responses": {
           "200": {
             "description": "Authenticated user",
@@ -1540,12 +1825,28 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in failed or was cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication failed"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Google email not verified",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Google email is not verified"
                 }
               }
             }
@@ -1556,6 +1857,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Email already registered to another account"
                 }
               }
             }
@@ -1569,6 +1873,7 @@
           "Auth"
         ],
         "summary": "Get the current user",
+        "description": "Any signed-in user. Returns the current user, or 401 if not signed in.",
         "security": [
           {
             "cookieAuth": []
@@ -1591,6 +1896,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1604,6 +1912,7 @@
           "Auth"
         ],
         "summary": "Log out and destroy the session",
+        "description": "Any signed-in user. Destroys the session and clears the cookie.",
         "security": [
           {
             "cookieAuth": []
@@ -1611,7 +1920,22 @@
         ],
         "responses": {
           "200": {
-            "description": "Logged out"
+            "description": "Logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Logged out"
+                }
+              }
+            }
           }
         }
       }
@@ -1622,6 +1946,7 @@
           "Advisories"
         ],
         "summary": "Get all advisories",
+        "description": "Public.",
         "parameters": [
           {
             "in": "query",
@@ -1694,6 +2019,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid query parameters",
+                  "errors": [
+                    "severity must be one of: info, warning, critical"
+                  ]
                 }
               }
             }
@@ -1738,6 +2069,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Unknown field(s): authorId"
                 }
               }
             }
@@ -1748,6 +2082,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1758,6 +2095,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1771,6 +2111,7 @@
           "Advisories"
         ],
         "summary": "Get an advisory by id",
+        "description": "Public.",
         "parameters": [
           {
             "in": "path",
@@ -1798,6 +2139,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1808,6 +2152,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Advisory not found"
                 }
               }
             }
@@ -1840,7 +2187,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AdvisoryInput"
+                "$ref": "#/components/schemas/AdvisoryUpdateInput"
               }
             }
           }
@@ -1857,11 +2204,17 @@
             }
           },
           "400": {
-            "description": "Invalid id or validation failed",
+            "description": "Invalid id, validation failed, or unknown field (e.g. authorId)",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Validation failed",
+                  "errors": [
+                    "severity must be one of: info, warning, critical"
+                  ]
                 }
               }
             }
@@ -1872,6 +2225,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1882,6 +2238,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1892,6 +2251,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Advisory not found"
                 }
               }
             }
@@ -1929,6 +2291,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid id"
                 }
               }
             }
@@ -1939,6 +2304,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Authentication required"
                 }
               }
             }
@@ -1949,6 +2317,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Insufficient permissions"
                 }
               }
             }
@@ -1959,6 +2330,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Advisory not found"
                 }
               }
             }

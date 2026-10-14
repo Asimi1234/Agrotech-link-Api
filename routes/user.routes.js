@@ -78,18 +78,26 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid query parameters
+ *               errors:
+ *                 - limit must not exceed 100
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *   post:
  *     tags: [Users]
  *     summary: Create a user
@@ -110,29 +118,39 @@ const listQuerySpec = {
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Validation failed
+ *         description: Validation failed or unknown field
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Validation failed
+ *               errors:
+ *                 - email is required
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       409:
  *         description: Duplicate googleId or email
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: email already exists
  */
 router.get('/', requireRole('admin'), validateQuery(listQuerySpec), getUsers);
 router.post('/', requireRole('admin'), validate(userSpec), createUser);
@@ -165,24 +183,32 @@ router.post('/', requireRole('admin'), validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: User not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: User not found
  *   put:
  *     tags: [Users]
  *     summary: Update a user
@@ -214,24 +240,32 @@ router.post('/', requireRole('admin'), validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: 'Unknown field(s): email'
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions, or non-admin assigning admin role
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Only an admin may assign the admin role
  *       404:
  *         description: User not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: User not found
  *   delete:
  *     tags: [Users]
  *     summary: Delete a user
@@ -253,24 +287,32 @@ router.post('/', requireRole('admin'), validate(userSpec), createUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: User not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: User not found
  */
 router.get('/:id', validateObjectId(), requireSelfOrAdmin(), getUserById);
 router.put(

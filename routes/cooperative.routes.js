@@ -39,6 +39,7 @@ const listQuerySpec = {
  *   get:
  *     tags: [Cooperatives]
  *     summary: Get all cooperatives
+ *     description: Public.
  *     parameters:
  *       - in: query
  *         name: page
@@ -70,6 +71,10 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid query parameters
+ *               errors:
+ *                 - page must be a positive integer
  *   post:
  *     tags: [Cooperatives]
  *     summary: Create a cooperative
@@ -95,18 +100,24 @@ const listQuerySpec = {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: 'Unknown field(s): leadId'
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       409:
  *         description: Duplicate cooperative name
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: name already exists
  */
 router.get('/', validateQuery(listQuerySpec), getCooperatives);
 router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
@@ -117,6 +128,7 @@ router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
  *   get:
  *     tags: [Cooperatives]
  *     summary: Get a cooperative by id
+ *     description: Public.
  *     parameters:
  *       - in: path
  *         name: id
@@ -136,12 +148,16 @@ router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       404:
  *         description: Cooperative not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Cooperative not found
  *   put:
  *     tags: [Cooperatives]
  *     summary: Update a cooperative
@@ -159,7 +175,7 @@ router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CooperativeInput'
+ *             $ref: '#/components/schemas/CooperativeUpdateInput'
  *     responses:
  *       200:
  *         description: Updated cooperative
@@ -168,35 +184,45 @@ router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
  *             schema:
  *               $ref: '#/components/schemas/Cooperative'
  *       400:
- *         description: Invalid id, validation failed, or memberIds reference missing users
+ *         description: Invalid id, validation failed, unknown field (e.g. leadId), or memberIds reference missing users
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: memberIds must all reference existing users
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Not the lead
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Cooperative not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Cooperative not found
  *       409:
  *         description: Duplicate cooperative name
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: name already exists
  *   delete:
  *     tags: [Cooperatives]
  *     summary: Delete a cooperative
@@ -218,24 +244,32 @@ router.post('/', requireAuth, validate(cooperativeSpec), createCooperative);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Invalid id
  *       401:
  *         description: Not signed in
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Authentication required
  *       403:
  *         description: Not the lead
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Insufficient permissions
  *       404:
  *         description: Cooperative not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: Cooperative not found
  */
 router.get('/:id', validateObjectId(), getCooperativeById);
 router.put(
