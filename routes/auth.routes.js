@@ -124,9 +124,7 @@ router.get('/me', getMe);
  *   post:
  *     tags: [Auth]
  *     summary: Log out and destroy the session
- *     description: Any signed-in user. Destroys the session and clears the cookie.
- *     security:
- *       - cookieAuth: []
+ *     description: Can be called by anyone, with or without a session, and is safe to repeat. Destroys the session and clears the cookie.
  *     responses:
  *       200:
  *         description: Logged out
